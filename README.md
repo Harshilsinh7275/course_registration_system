@@ -137,4 +137,4 @@ Student (`alice`) enrolls into `COMP249-A` before completing `COMP248` -> should
 
 ## Author
 
-Course Regisration Team
+Course Registration Team
