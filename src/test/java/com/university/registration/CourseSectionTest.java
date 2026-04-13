@@ -5,6 +5,7 @@ import com.university.registration.model.CourseSection;
 import com.university.registration.model.DegreeProgram;
 import com.university.registration.model.Department;
 import com.university.registration.model.EnrollmentStatus;
+import com.university.registration.model.SectionState;
 import com.university.registration.model.Semester;
 import com.university.registration.model.Student;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,5 +60,42 @@ class CourseSectionTest {
         assertEquals(EnrollmentStatus.ENROLLED, s2.getEnrollments().get(0).getStatus());
         assertEquals(1, section.getEnrolledCount());
     }
-}
 
+    @Test
+    void sectionStateTransitionsFollowCapacityAndDates() {
+        Semester fixedSemester = new Semester(
+                "FALL-2026",
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 12, 20),
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 8, 31)
+        );
+        Course course = new Course("COMP248", "OOP I", 3, department);
+        CourseSection section = new CourseSection("A", 1, course, fixedSemester);
+
+        assertEquals(SectionState.PLANNED, section.refreshState(LocalDate.of(2026, 6, 30)));
+        assertEquals(SectionState.OPEN, section.refreshState(LocalDate.of(2026, 7, 15)));
+        section.setEnrolledCount(1);
+        assertEquals(SectionState.CLOSED, section.refreshState(LocalDate.of(2026, 7, 16)));
+        assertEquals(SectionState.IN_PROGRESS, section.refreshState(LocalDate.of(2026, 9, 1)));
+        assertEquals(SectionState.COMPLETED, section.refreshState(LocalDate.of(2026, 12, 21)));
+    }
+
+    @Test
+    void cancelledSectionKeepsCancelledState() {
+        Semester fixedSemester = new Semester(
+                "FALL-2026",
+                LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 12, 20),
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 8, 31)
+        );
+        Course course = new Course("COMP248", "OOP I", 3, department);
+        CourseSection section = new CourseSection("A", 1, course, fixedSemester);
+
+        section.cancel(LocalDate.of(2026, 7, 15));
+
+        assertEquals(SectionState.CANCELLED, section.getState());
+        assertEquals(SectionState.CANCELLED, section.refreshState(LocalDate.of(2026, 9, 10)));
+    }
+}

@@ -74,7 +74,8 @@ public class Student extends Person {
                 + " | Schedule: " + dayTime
                 + " | Location: " + room
                 + " | Capacity: " + section.getCapacity()
-                + " | Seats remaining: " + section.seatsRemaining();
+                + " | Seats remaining: " + section.seatsRemaining()
+                + " | State: " + section.refreshState(LocalDate.now());
     }
 
     public List<Enrollment> listEnrollments(Semester semester) {

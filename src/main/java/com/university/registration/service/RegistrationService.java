@@ -4,7 +4,9 @@ import com.university.registration.model.Course;
 import com.university.registration.model.CourseSection;
 import com.university.registration.model.Enrollment;
 import com.university.registration.model.EnrollmentStatus;
+import com.university.registration.model.SectionState;
 import com.university.registration.model.Semester;
+import com.university.registration.model.SemesterState;
 import com.university.registration.model.Student;
 
 import java.time.LocalDate;
@@ -16,11 +18,16 @@ import java.util.stream.Collectors;
 public class RegistrationService {
 
     public Enrollment enrollStudent(Student student, CourseSection section, Semester semester, LocalDate today) {
-        if (!semester.isWithinRegistrationDate(today)) {
+        SemesterState semesterState = semester.refreshState(today);
+        if (semesterState != SemesterState.REGISTRATION_OPEN) {
             throw new IllegalStateException("Registration window is closed. Deadline was: " + semester.getRegistrationEndDate());
         }
         if (section.getSemester() != semester) {
             throw new IllegalArgumentException("Section does not belong to the given semester.");
+        }
+        SectionState sectionState = section.refreshState(today);
+        if (sectionState == SectionState.CANCELLED || sectionState == SectionState.IN_PROGRESS || sectionState == SectionState.COMPLETED) {
+            throw new IllegalStateException("Section is not open for registration.");
         }
         if (hasActiveEnrollmentInSection(student, section)) {
             throw new IllegalStateException("Student is already enrolled or waitlisted in this section.");
@@ -51,6 +58,7 @@ public class RegistrationService {
             section.setEnrolledCount(section.getEnrolledCount() + 1);
             status = EnrollmentStatus.ENROLLED;
         }
+        section.refreshState(today);
 
         Enrollment enrollment = new Enrollment(LocalDateTime.now(), status, student, section);
         student.getEnrollments().add(enrollment);
@@ -59,7 +67,7 @@ public class RegistrationService {
     }
 
     public void dropCourse(Student student, CourseSection section, Semester semester, LocalDate today) {
-        if (!semester.isWithinRegistrationDate(today)) {
+        if (semester.refreshState(today) != SemesterState.REGISTRATION_OPEN) {
             throw new IllegalStateException("Drop period is closed. Deadline was: " + semester.getRegistrationEndDate());
         }
         Optional<Enrollment> enrollmentOpt = student.getEnrollments().stream()
@@ -80,6 +88,7 @@ public class RegistrationService {
             enrollment.setStatus(EnrollmentStatus.DROPPED);
             section.getWaitlist().remove(student);
         }
+        section.refreshState(today);
     }
 
     public boolean validatePrerequisites(Student student, Course course) {
@@ -149,7 +158,11 @@ public class RegistrationService {
     private boolean isEligibleForPromotion(Student student, CourseSection section) {
         Semester semester = section.getSemester();
         LocalDate today = LocalDate.now();
-        if (!semester.isWithinRegistrationDate(today)) {
+        if (semester.refreshState(today) != SemesterState.REGISTRATION_OPEN) {
+            return false;
+        }
+        SectionState sectionState = section.refreshState(today);
+        if (sectionState == SectionState.CANCELLED || sectionState == SectionState.IN_PROGRESS || sectionState == SectionState.COMPLETED) {
             return false;
         }
         if (!isCourseAllowedForProgram(student, section.getCourse())) {

@@ -11,6 +11,7 @@ public class Semester {
     private LocalDate registrationStartDate;
     private LocalDate registrationEndDate;
     private List<CourseSection> sections;
+    private SemesterState state;
 
     public Semester(
             String semesterCode,
@@ -25,11 +26,37 @@ public class Semester {
         this.registrationStartDate = registrationStartDate;
         this.registrationEndDate = registrationEndDate;
         this.sections = new ArrayList<>();
+        this.state = calculateState(LocalDate.now());
     }
 
     public boolean isWithinRegistrationDate(LocalDate today) {
         return (today.isEqual(registrationStartDate) || today.isAfter(registrationStartDate))
                 && (today.isEqual(registrationEndDate) || today.isBefore(registrationEndDate));
+    }
+
+    public SemesterState getState() {
+        return state;
+    }
+
+    public SemesterState refreshState(LocalDate today) {
+        this.state = calculateState(today);
+        return state;
+    }
+
+    private SemesterState calculateState(LocalDate today) {
+        if (today.isBefore(registrationStartDate)) {
+            return SemesterState.PLANNED;
+        }
+        if (!today.isAfter(registrationEndDate)) {
+            return SemesterState.REGISTRATION_OPEN;
+        }
+        if (today.isBefore(startDate)) {
+            return SemesterState.REGISTRATION_CLOSED;
+        }
+        if (!today.isAfter(endDate)) {
+            return SemesterState.IN_PROGRESS;
+        }
+        return SemesterState.COMPLETED;
     }
 
     public String getSemesterCode() {
@@ -80,4 +107,3 @@ public class Semester {
         this.sections = sections;
     }
 }
-
