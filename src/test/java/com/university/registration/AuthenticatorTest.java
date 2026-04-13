@@ -4,6 +4,7 @@ import com.university.registration.model.Authenticator;
 import com.university.registration.model.Admin;
 import com.university.registration.model.DegreeProgram;
 import com.university.registration.model.Person;
+import com.university.registration.model.SessionState;
 import com.university.registration.model.Student;
 import org.junit.jupiter.api.Test;
 
@@ -25,9 +26,11 @@ class AuthenticatorTest {
         Person user = authenticator.login("alice", "pass");
         assertNotNull(user);
         assertTrue(user.isLoggedIn());
+        assertTrue(user.getSessionState() == SessionState.LOGGED_IN);
 
         authenticator.logout(user);
         assertFalse(user.isLoggedIn());
+        assertTrue(user.getSessionState() == SessionState.LOGGED_OUT);
     }
 
     @Test
@@ -37,6 +40,7 @@ class AuthenticatorTest {
 
         Person user = authenticator.login("alice", "wrong-password");
         assertNull(user);
+        assertTrue(student.getSessionState() == SessionState.LOGGED_OUT);
     }
 
     @Test

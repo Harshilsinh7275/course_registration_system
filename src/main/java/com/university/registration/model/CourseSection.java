@@ -18,6 +18,7 @@ public class CourseSection {
     private Room room;
     private Schedule schedule;
     private List<Enrollment> enrollments;
+    private SectionState state;
 
     public CourseSection(String sectionId, int capacity, Course course, Semester semester) {
         this.sectionId = sectionId;
@@ -28,6 +29,7 @@ public class CourseSection {
         this.waitlistThreshold = capacity * 2;
         this.enrollments = new ArrayList<>();
         this.enrolledCount = 0;
+        this.state = SectionState.PLANNED;
     }
 
     public int seatsRemaining() {
@@ -39,14 +41,42 @@ public class CourseSection {
     }
 
     public boolean isActive() {
-        LocalDate today = LocalDate.now();
-        return !today.isBefore(semester.getStartDate()) && !today.isAfter(semester.getEndDate());
+        return refreshState(LocalDate.now()) == SectionState.IN_PROGRESS;
     }
 
     public void updateWaitlist(Student student) {
         if (!waitlist.contains(student) && (waitlistThreshold <= 0 || waitlist.size() < waitlistThreshold)) {
             waitlist.offer(student);
         }
+    }
+
+    public SectionState getState() {
+        return state;
+    }
+
+    public SectionState refreshState(LocalDate today) {
+        if (state == SectionState.CANCELLED) {
+            return state;
+        }
+        SemesterState semesterState = semester.refreshState(today);
+        if (semesterState == SemesterState.IN_PROGRESS) {
+            state = SectionState.IN_PROGRESS;
+        } else if (semesterState == SemesterState.COMPLETED) {
+            state = SectionState.COMPLETED;
+        } else if (semesterState == SemesterState.REGISTRATION_OPEN) {
+            state = isFull() ? SectionState.CLOSED : SectionState.OPEN;
+        } else {
+            state = SectionState.PLANNED;
+        }
+        return state;
+    }
+
+    public void cancel(LocalDate today) {
+        SectionState current = refreshState(today);
+        if (current == SectionState.IN_PROGRESS || current == SectionState.COMPLETED) {
+            throw new IllegalStateException("Section changes are allowed only before semester start.");
+        }
+        state = SectionState.CANCELLED;
     }
 
     public String getSectionId() {
@@ -137,4 +167,3 @@ public class CourseSection {
         this.enrollments = enrollments;
     }
 }
-

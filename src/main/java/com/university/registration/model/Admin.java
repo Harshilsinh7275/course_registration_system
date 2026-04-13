@@ -62,12 +62,14 @@ public class Admin extends Person {
 
     public void cancelSection(Course course, Semester semester, CourseSection section) {
         ensureBeforeSemesterStart(semester);
+        section.cancel(LocalDate.now());
         course.getSections().remove(section);
         semester.getSections().remove(section);
     }
 
     private void ensureBeforeSemesterStart(Semester semester) {
-        if (!LocalDate.now().isBefore(semester.getStartDate())) {
+        if (semester.refreshState(LocalDate.now()) == SemesterState.IN_PROGRESS
+                || semester.refreshState(LocalDate.now()) == SemesterState.COMPLETED) {
             throw new IllegalStateException("Section changes are allowed only before semester start.");
         }
     }

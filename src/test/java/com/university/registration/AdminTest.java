@@ -7,6 +7,7 @@ import com.university.registration.model.Department;
 import com.university.registration.model.Instructor;
 import com.university.registration.model.Room;
 import com.university.registration.model.Schedule;
+import com.university.registration.model.SectionState;
 import com.university.registration.model.Semester;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +73,7 @@ class AdminTest {
         assertTrue(semester.getSections().contains(section));
 
         admin.cancelSection(course, semester, section);
+        assertEquals(SectionState.CANCELLED, section.getState());
         assertTrue(!semester.getSections().contains(section));
         assertTrue(!course.getSections().contains(section));
     }

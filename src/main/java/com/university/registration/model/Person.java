@@ -6,7 +6,7 @@ public abstract class Person {
     private String email;
     private String username;
     private String password;
-    private boolean loggedIn;
+    private SessionState sessionState;
 
     protected Person(String id, String name, String email, String username, String password) {
         this.id = id;
@@ -14,16 +14,17 @@ public abstract class Person {
         this.email = email;
         this.username = username;
         this.password = password;
+        this.sessionState = SessionState.LOGGED_OUT;
     }
 
     public boolean login(String username, String password) {
         boolean success = this.username.equals(username) && this.password.equals(password);
-        this.loggedIn = success;
+        this.sessionState = success ? SessionState.LOGGED_IN : SessionState.LOGGED_OUT;
         return success;
     }
 
     public void logout() {
-        this.loggedIn = false;
+        this.sessionState = SessionState.LOGGED_OUT;
     }
 
     public String getId() {
@@ -67,7 +68,10 @@ public abstract class Person {
     }
 
     public boolean isLoggedIn() {
-        return loggedIn;
+        return sessionState == SessionState.LOGGED_IN;
+    }
+
+    public SessionState getSessionState() {
+        return sessionState;
     }
 }
-
